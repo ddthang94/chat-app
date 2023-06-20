@@ -57,25 +57,43 @@ export default function Chat() {
     }
   }
 
-  function sendMessage(ev) {
-    ev.preventDefault();
+  function sendMessage(ev, file = null) {
+    if (ev) ev.preventDefault();
     ws.send(
       JSON.stringify({
         recipient: selectedUserId,
         text: newMessageText,
+        file,
       })
     );
-    setNewMessageText("");
-    setMessages((prev) => [
-      ...prev,
-      {
-        text: newMessageText,
-        sender: id,
-        recipient: selectedUserId,
-        _id: Date.now(),
-      },
-    ]);
-    sendMessage();
+    if (file) {
+      axios.get("/messages/" + selectedUserId).then((res) => {
+        setMessages(res.data);
+      });
+    } else {
+      setNewMessageText("");
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: newMessageText,
+          sender: id,
+          recipient: selectedUserId,
+          _id: Date.now(),
+        },
+      ]);
+    }
+  }
+
+  // sending a file
+  function sendFile(ev) {
+    const reader = new FileReader();
+    reader.readAsDataURL(ev.target.files[0]);
+    reader.onload = () => {
+      sendMessage(null, {
+        name: ev.target.files[0].name,
+        data: reader.result,
+      });
+    };
   }
 
   // scroll message to div under current message (latest message)
@@ -116,7 +134,7 @@ export default function Chat() {
 
   return (
     <div className="relative bg-[url(https://images.unsplash.com/photo-1508615039623-a25605d2b022?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80)] bg-cover bg-center h-screen flex items-center justify-center">
-      <div className="flex h-5/6 w-11/12 border border-solid border-white shadow-md rounded-md overflow-hidden">
+      <div className="flex h-5/6 w-11/12 shadow-md rounded-md overflow-hidden">
         <div className="flex flex-col bg-white w-1/3">
           <Logo />
           <div className="flex-grow overflow-y-scroll no-scrollbar">
@@ -142,7 +160,9 @@ export default function Chat() {
             ))}
           </div>
           <div className="flex items-center justify-between bg-gray-600 px-3 py-4 text-blue-400 font-medium">
-            <span className="hidden px-1 sm:block capitalize shadow-md">Hello,{username}!</span>
+            <span className="hidden px-1 sm:block capitalize shadow-md">
+              Hello,{username}!
+            </span>
             <div>
               <button
                 onClick={logout}
@@ -181,6 +201,34 @@ export default function Chat() {
                         }
                       >
                         {message.text}
+                        {message.file && (
+                          <div>
+                            <a
+                              className="flex items-center gap-1 border-b"
+                              target="_blank"
+                              href={
+                                axios.defaults.baseURL +
+                                "/uploads/" +
+                                message.file
+                              }
+                            >
+                              {/* icon */}
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                className="w-4 h-4"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M18.97 3.659a2.25 2.25 0 00-3.182 0l-10.94 10.94a3.75 3.75 0 105.304 5.303l7.693-7.693a.75.75 0 011.06 1.06l-7.693 7.693a5.25 5.25 0 11-7.424-7.424l10.939-10.94a3.75 3.75 0 115.303 5.304L9.097 18.835l-.008.008-.007.007-.002.002-.003.002A2.25 2.25 0 015.91 15.66l7.81-7.81a.75.75 0 011.061 1.06l-7.81 7.81a.75.75 0 001.054 1.068L18.97 6.84a2.25 2.25 0 000-3.182z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              {message.file}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -198,6 +246,21 @@ export default function Chat() {
                 placeholder="Type your message..."
                 className="bg-white flex-grow border p-2 rounded-lg outline-none"
               />
+              <label className="bg-blue-500 p-2 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+                <input type="file" className="hidden" onChange={sendFile} />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18.97 3.659a2.25 2.25 0 00-3.182 0l-10.94 10.94a3.75 3.75 0 105.304 5.303l7.693-7.693a.75.75 0 011.06 1.06l-7.693 7.693a5.25 5.25 0 11-7.424-7.424l10.939-10.94a3.75 3.75 0 115.303 5.304L9.097 18.835l-.008.008-.007.007-.002.002-.003.002A2.25 2.25 0 015.91 15.66l7.81-7.81a.75.75 0 011.061 1.06l-7.81 7.81a.75.75 0 001.054 1.068L18.97 6.84a2.25 2.25 0 000-3.182z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </label>
               <button
                 type="submit"
                 className="bg-blue-500 p-2 text-white rounded-lg hover:bg-blue-700"
@@ -221,7 +284,7 @@ export default function Chat() {
           )}
         </div>
       </div>
-      <div className="absolute bottom-2 text-sm px-2 border font-medium shadow-md">
+      <div className="absolute bottom-2 text-sm px-2 font-medium shadow-md">
         ChatApp&copy;2023 - All rights reserved.
       </div>
     </div>

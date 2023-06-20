@@ -74,7 +74,7 @@ export default function RegisterAndLoginForm() {
           </div>
         </form>
       </div>
-      <div className="absolute bottom-2 text-sm px-2 border font-medium shadow-md">
+      <div className="absolute bottom-2 text-sm px-2 font-medium shadow-md">
         ChatApp&copy;2023 - All rights reserved.
       </div>
     </div>
