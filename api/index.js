@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+// import bcrypt into project
 const bcrypt = require("bcryptjs");
 const User = require("./models/User");
 const Message = require("./models/Message");
@@ -16,6 +17,8 @@ mongoose.connect(process.env.MONGO_URL, (err) => {
   if (err) throw err;
 });
 const jwtSecret = process.env.JWT_SECRET;
+// generate a random bits added to each password instance 
+// before its hashing which is called a cryptographic salt
 const bcryptSalt = bcrypt.genSaltSync(10);
 
 const app = express();
@@ -102,6 +105,7 @@ app.post("/logout", (req, res) => {
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
+    // hashing password before create new user
     const hashedPassword = bcrypt.hashSync(password, bcryptSalt);
     const createdUser = await User.create({
       username: username,
@@ -127,6 +131,7 @@ app.post("/register", async (req, res) => {
 const server = app.listen(4040);
 
 const wss = new ws.WebSocketServer({ server });
+
 wss.on("connection", (connection, req) => {
   function notifyAboutOnlinePeople() {
     [...wss.clients].forEach((client) => {
@@ -152,13 +157,13 @@ wss.on("connection", (connection, req) => {
       notifyAboutOnlinePeople();
       console.log("isDead");
     }, 1000);
-  }, 10000);
+  }, 5000);
 
   connection.on("pong", () => {
     clearTimeout(connection.deathTimer);
   });
 
-  // read username and useId from the cookie for connection
+  // read username and userId from the cookie for connection
   const cookies = req.headers.cookie;
   if (cookies) {
     const tokenCookieString = cookies
